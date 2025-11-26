@@ -75,12 +75,14 @@ class ROS2NodeRunner:
         except psutil.NoSuchProcess:
             # Process already terminated
             pass
-        except (subprocess.SubprocessError, OSError) as e:
-            # Handle process-related errors specifically
-            if self.process.poll() is None:
-                self.process.terminate()
-                self.process.wait()
-    
+        except (subprocess.SubprocessError, OSError):
+            # Handle other process-related errors
+            try:
+                if self.process.poll() is None:
+                    self.process.terminate()
+                    self.process.wait()
+            except Exception:
+                pass  # Best effort cleanup
     def __enter__(self):
         """Context manager entry."""
         self.start()
