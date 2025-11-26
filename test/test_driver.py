@@ -10,7 +10,7 @@ sys.modules['std_msgs.msg'] = MagicMock()
 sys.modules['std_srvs'] = MagicMock()
 sys.modules['std_srvs.srv'] = MagicMock()
 
-from hlcs.driver import DriverNode
+from hlcs.driver import DriverNode  # noqa: E402
 
 
 def test_driver_node_class_exists():

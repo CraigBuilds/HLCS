@@ -83,7 +83,7 @@ class GUINode(Node):
         """Initialize the GUI node."""
         super().__init__('gui')
         self.bridge = bridge
-        
+
         # Subscribers
         self.data_sub = self.create_subscription(
             Float64, 'hlcs/data', self.data_callback, 10
@@ -91,11 +91,11 @@ class GUINode(Node):
         self.counter_sub = self.create_subscription(
             Int32, 'hlcs/counter', self.counter_callback, 10
         )
-        
+
         # Service clients
         self.increment_client = self.create_client(Trigger, 'hlcs/increment_counter')
         self.reset_client = self.create_client(Trigger, 'hlcs/reset_counter')
-        
+
         self.get_logger().info('GUI node initialized')
         self.bridge.statusMessage = 'GUI node initialized. Waiting for data...'
 
@@ -114,7 +114,7 @@ class GUINode(Node):
             self.bridge.statusMessage = 'Increment service not available'
             self.get_logger().warn('Increment service not available')
             return
-        
+
         request = Trigger.Request()
         future = self.increment_client.call_async(request)
         future.add_done_callback(self.increment_response_callback)
@@ -138,7 +138,7 @@ class GUINode(Node):
             self.bridge.statusMessage = 'Reset service not available'
             self.get_logger().warn('Reset service not available')
             return
-        
+
         request = Trigger.Request()
         future = self.reset_client.call_async(request)
         future.add_done_callback(self.reset_response_callback)
@@ -161,44 +161,44 @@ def main(args=None):
     """Main entry point for the GUI node."""
     # Initialize ROS2
     rclpy.init(args=args)
-    
+
     # Create Qt application
     app = QGuiApplication(sys.argv)
-    
+
     # Create bridge
     bridge = ROS2Bridge(None)
-    
+
     # Create ROS2 node
     node = GUINode(bridge)
     bridge.node = node
-    
+
     # Set up QML engine
     engine = QQmlApplicationEngine()
     engine.rootContext().setContextProperty("bridge", bridge)
-    
+
     # Load QML file
     qml_file = Path(__file__).parent / "qml" / "main.qml"
     engine.load(QUrl.fromLocalFile(str(qml_file)))
-    
+
     if not engine.rootObjects():
         node.get_logger().error('Failed to load QML file')
         return -1
-    
+
     # Create executor for ROS2
     executor = MultiThreadedExecutor()
     executor.add_node(node)
-    
+
     # Run ROS2 in a separate thread
     ros_thread = Thread(target=executor.spin, daemon=True)
     ros_thread.start()
-    
+
     # Run Qt event loop
     try:
         exit_code = app.exec()
     finally:
         node.destroy_node()
         rclpy.shutdown()
-    
+
     return exit_code
 
 

@@ -17,4 +17,3 @@ def test_opcua_simulator_init_custom_endpoint():
     custom_endpoint = "opc.tcp://localhost:4850/custom/server/"
     simulator = OpcuaSimulator(endpoint=custom_endpoint)
     assert simulator.endpoint == custom_endpoint
-

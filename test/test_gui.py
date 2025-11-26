@@ -16,19 +16,21 @@ mock_qobject = type('QObject', (), {
     '__init__': lambda self: None,
 })
 
+
 # Create a proper Property mock that supports setter
 class PropertyMock:
     def __init__(self, *args, **kwargs):
         self._getter = None
         self._setter = None
-    
+
     def __call__(self, func):
         self._getter = func
         return self
-    
+
     def setter(self, func):
         self._setter = func
         return self
+
 
 mock_qtcore = MagicMock()
 mock_qtcore.QObject = mock_qobject
@@ -41,7 +43,8 @@ sys.modules['PySide6.QtCore'] = mock_qtcore
 sys.modules['PySide6.QtGui'] = MagicMock()
 sys.modules['PySide6.QtQml'] = MagicMock()
 
-from hlcs.gui import ROS2Bridge, GUINode
+
+from hlcs.gui import ROS2Bridge, GUINode  # noqa: E402
 
 
 def test_ros2bridge_class_exists():
