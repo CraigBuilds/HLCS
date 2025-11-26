@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build ROS2 Package
@@ -20,10 +24,17 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
     
+    - name: Cache pip packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
     - name: Install dependencies
       run: |
-        apt-get update
-        apt-get install -y python3-pip
+        apt-get update && apt-get install -y python3-pip
         pip3 install -r requirements.txt
     
     - name: Build package
@@ -39,122 +50,51 @@ jobs:
         path: install/
         retention-days: 1
 
-  test-sim:
-    name: Test OPC UA Simulator
+  test:
+    name: Test ${{ matrix.test-name }}
     needs: build
     runs-on: ubuntu-latest
     container:
       image: ros:humble
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - test-name: OPC UA Simulator
+            test-file: test_sim.py
+          - test-name: Driver Node
+            test-file: test_driver.py
+          - test-name: GUI Node
+            test-file: test_gui.py
+          - test-name: Smoke Tests
+            test-file: test_smoke.py
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
     
+    - name: Cache pip packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
     - name: Install dependencies
       run: |
-        apt-get update
-        apt-get install -y python3-pip
+        apt-get update && apt-get install -y python3-pip
         pip3 install -r requirements.txt
     
     - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
         name: build-artifacts
-        path: .
+        path: install/
     
-    - name: Run sim tests
+    - name: Run tests
       shell: bash
       run: |
         source /opt/ros/humble/setup.bash && \
         source install/setup.bash && \
-        python3 -m pytest test/test_sim.py -v
-
-  test-driver:
-    name: Test Driver Node
-    needs: build
-    runs-on: ubuntu-latest
-    container:
-      image: ros:humble
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Install dependencies
-      run: |
-        apt-get update
-        apt-get install -y python3-pip
-        pip3 install -r requirements.txt
-    
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: build-artifacts
-        path: .
-    
-    - name: Run driver tests
-      shell: bash
-      run: |
-        source /opt/ros/humble/setup.bash && \
-        source install/setup.bash && \
-        python3 -m pytest test/test_driver.py -v
-
-  test-gui:
-    name: Test GUI Node
-    needs: build
-    runs-on: ubuntu-latest
-    container:
-      image: ros:humble
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Install dependencies
-      run: |
-        apt-get update
-        apt-get install -y python3-pip
-        pip3 install -r requirements.txt
-    
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: build-artifacts
-        path: .
-    
-    - name: Run GUI tests
-      shell: bash
-      run: |
-        source /opt/ros/humble/setup.bash && \
-        source install/setup.bash && \
-        python3 -m pytest test/test_gui.py -v
-
-  test-smoke:
-    name: Smoke Tests
-    needs: build
-    runs-on: ubuntu-latest
-    container:
-      image: ros:humble
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    
-    - name: Install dependencies
-      run: |
-        apt-get update
-        apt-get install -y python3-pip
-        pip3 install -r requirements.txt
-    
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: build-artifacts
-        path: .
-    
-    - name: Run smoke tests
-      shell: bash
-      run: |
-        source /opt/ros/humble/setup.bash && \
-        source install/setup.bash && \
-        python3 -m pytest test/test_smoke.py -v
+        python3 -m pytest test/${{ matrix.test-file }} -v
