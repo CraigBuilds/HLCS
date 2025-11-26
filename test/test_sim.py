@@ -1,5 +1,4 @@
 """Unit tests for the OPC UA simulator."""
-import pytest
 from hlcs.sim import OpcuaSimulator
 
 
