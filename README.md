@@ -54,3 +54,38 @@ ros2 run hlcs gui
 
 - `hlcs/increment_counter` (std_srvs/Trigger): Increment the counter
 - `hlcs/reset_counter` (std_srvs/Trigger): Reset the counter to 0
+
+## Testing
+
+### Running Tests Locally
+
+The project includes unit tests and smoke tests for all three components (sim, driver, gui).
+
+1. Install test dependencies:
+```bash
+pip install pytest pytest-asyncio pytest-mock
+```
+
+2. Run all tests:
+```bash
+python -m pytest test/ -v
+```
+
+3. Run specific test files:
+```bash
+# Smoke tests only
+python -m pytest test/test_smoke.py -v
+
+# Tests for simulator
+python -m pytest test/test_sim.py -v
+
+# Tests for driver node
+python -m pytest test/test_driver.py -v
+
+# Tests for GUI node
+python -m pytest test/test_gui.py -v
+```
+
+### Continuous Integration
+
+Tests are automatically run on every push and pull request via GitHub Actions. See the workflow status in the Actions tab of the repository.
