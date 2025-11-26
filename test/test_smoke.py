@@ -82,39 +82,16 @@ def test_gui_node_runs():
     Note: GUI node requires a display. This test verifies it starts even in headless mode.
     The node may fail to initialize GUI components without a display, which is expected.
     """
-    # Set up headless environment
     import os
     env = os.environ.copy()
     env['QT_QPA_PLATFORM'] = 'offscreen'
-    
-    # Start the node with headless environment
-    cmd = ['ros2', 'run', 'hlcs', 'gui']
-    process = subprocess.Popen(
-        cmd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        env=env
-    )
-    
-    try:
+    with ROS2NodeRunner('hlcs', 'gui', timeout=3, env=env) as runner:
         # Give it time to attempt startup
         time.sleep(2)
-        
         # The process might have exited due to display issues, which is OK
         # We just verify it attempted to start
-        returncode = process.poll()
-        
+        returncode = runner.process.poll()
         # If it's still running, that's good
         # If it exited, check it's not a catastrophic failure (returncode -9, -11)
         if returncode is not None:
             assert returncode not in [-9, -11], f"GUI node crashed with signal {-returncode}"
-    finally:
-        # Clean up
-        if process.poll() is None:
-            process.terminate()
-            try:
-                process.wait(timeout=3)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait()
