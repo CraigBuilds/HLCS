@@ -10,11 +10,94 @@ from std_srvs.srv import Trigger
 from asyncua import Client
 
 
+class OpcuaClientWrapper:
+    """Wrapper for OPC UA client operations - separated for testability."""
+
+    def __init__(self, endpoint):
+        """Initialize the wrapper.
+        
+        Args:
+            endpoint: OPC UA server endpoint URL
+        """
+        self.endpoint = endpoint
+        self.client = None
+        self.data_node = None
+        self.counter_node = None
+        self.increment_method = None
+        self.reset_method = None
+        self._connected = False
+
+    def is_connected(self):
+        """Check if client is connected and ready."""
+        return self._connected and self.client is not None
+
+    async def connect(self):
+        """Connect to the OPC UA server and get nodes/methods."""
+        self.client = Client(url=self.endpoint)
+        await self.client.connect()
+        
+        # Get namespace index
+        nsidx = await self.client.get_namespace_index("http://hlcs.example.com")
+        
+        # Get nodes
+        root = self.client.get_root_node()
+        objects = await root.get_child(["0:Objects"])
+        hlcs_object = await objects.get_child([f"{nsidx}:HLCSObject"])
+        
+        self.data_node = await hlcs_object.get_child([f"{nsidx}:Data"])
+        self.counter_node = await hlcs_object.get_child([f"{nsidx}:Counter"])
+        
+        # Get methods
+        children = await hlcs_object.get_children()
+        for child in children:
+            browse_name = await child.read_browse_name()
+            if browse_name.Name == "IncrementCounter":
+                self.increment_method = child
+            elif browse_name.Name == "ResetCounter":
+                self.reset_method = child
+        
+        self._connected = True
+
+    async def read_data_value(self):
+        """Read data value from OPC UA server."""
+        if not self.is_connected() or self.data_node is None:
+            raise RuntimeError("Not connected to OPC UA server")
+        return await self.data_node.read_value()
+
+    async def read_counter_value(self):
+        """Read counter value from OPC UA server."""
+        if not self.is_connected() or self.counter_node is None:
+            raise RuntimeError("Not connected to OPC UA server")
+        return await self.counter_node.read_value()
+
+    async def call_increment_counter(self):
+        """Call increment counter method."""
+        if not self.is_connected() or self.increment_method is None:
+            raise RuntimeError("Not connected to OPC UA server")
+        return await self.client.call_method(self.increment_method, [])
+
+    async def call_reset_counter(self):
+        """Call reset counter method."""
+        if not self.is_connected() or self.reset_method is None:
+            raise RuntimeError("Not connected to OPC UA server")
+        await self.client.call_method(self.reset_method, [])
+
+    async def disconnect(self):
+        """Disconnect from OPC UA server."""
+        if self.client:
+            await self.client.disconnect()
+            self._connected = False
+
+
 class DriverNode(Node):
     """ROS2 node that bridges OPC UA server to ROS2 topics and services."""
 
-    def __init__(self):
-        """Initialize the driver node."""
+    def __init__(self, opcua_wrapper=None):
+        """Initialize the driver node.
+        
+        Args:
+            opcua_wrapper: Optional OpcuaClientWrapper for testing
+        """
         super().__init__('driver')
         
         # Parameters
@@ -33,12 +116,8 @@ class DriverNode(Node):
             Trigger, 'hlcs/reset_counter', self.reset_counter_callback
         )
         
-        # OPC UA client
-        self.client = None
-        self.data_node = None
-        self.counter_node = None
-        self.increment_method = None
-        self.reset_method = None
+        # OPC UA client wrapper
+        self.opcua_wrapper = opcua_wrapper or OpcuaClientWrapper(self.opcua_endpoint)
         self.running = True
         
         # Start OPC UA client in separate thread
@@ -68,43 +147,21 @@ class DriverNode(Node):
     async def _connect_opcua(self):
         """Connect to the OPC UA server."""
         try:
-            self.client = Client(url=self.opcua_endpoint)
-            await self.client.connect()
+            await self.opcua_wrapper.connect()
             self.get_logger().info('Connected to OPC UA server')
-            
-            # Get namespace index
-            nsidx = await self.client.get_namespace_index("http://hlcs.example.com")
-            
-            # Get nodes
-            root = self.client.get_root_node()
-            objects = await root.get_child(["0:Objects"])
-            hlcs_object = await objects.get_child([f"{nsidx}:HLCSObject"])
-            
-            self.data_node = await hlcs_object.get_child([f"{nsidx}:Data"])
-            self.counter_node = await hlcs_object.get_child([f"{nsidx}:Counter"])
-            
-            # Get methods
-            children = await hlcs_object.get_children()
-            for child in children:
-                browse_name = await child.read_browse_name()
-                if browse_name.Name == "IncrementCounter":
-                    self.increment_method = child
-                elif browse_name.Name == "ResetCounter":
-                    self.reset_method = child
-            
             self.get_logger().info('OPC UA nodes and methods acquired')
         except Exception as e:
             self.get_logger().error(f'Failed to connect to OPC UA server: {e}')
 
     def timer_callback(self):
         """Timer callback to publish OPC UA data."""
-        if self.client and self.data_node and self.counter_node:
+        if self.opcua_wrapper.is_connected():
             # Schedule both reads concurrently in the OPC UA event loop
             future_data = asyncio.run_coroutine_threadsafe(
-                self.data_node.read_value(), self.loop
+                self.opcua_wrapper.read_data_value(), self.loop
             )
             future_counter = asyncio.run_coroutine_threadsafe(
-                self.counter_node.read_value(), self.loop
+                self.opcua_wrapper.read_counter_value(), self.loop
             )
             
             try:
@@ -124,10 +181,10 @@ class DriverNode(Node):
 
     def increment_counter_callback(self, request, response):
         """Service callback to increment counter."""
-        if self.client and self.increment_method:
+        if self.opcua_wrapper.is_connected():
             try:
                 future = asyncio.run_coroutine_threadsafe(
-                    self.client.call_method(self.increment_method, []), self.loop
+                    self.opcua_wrapper.call_increment_counter(), self.loop
                 )
                 result = future.result(timeout=2.0)
                 response.success = True
@@ -145,10 +202,10 @@ class DriverNode(Node):
 
     def reset_counter_callback(self, request, response):
         """Service callback to reset counter."""
-        if self.client and self.reset_method and self.loop:
+        if self.opcua_wrapper.is_connected():
             try:
                 future = asyncio.run_coroutine_threadsafe(
-                    self.client.call_method(self.reset_method, []), self.loop
+                    self.opcua_wrapper.call_reset_counter(), self.loop
                 )
                 future.result(timeout=2.0)
                 response.success = True
@@ -167,9 +224,9 @@ class DriverNode(Node):
     def destroy_node(self):
         """Clean up the node."""
         self.running = False
-        if self.client and self.loop:
+        if self.opcua_wrapper.is_connected() and self.loop:
             try:
-                future = asyncio.run_coroutine_threadsafe(self.client.disconnect(), self.loop)
+                future = asyncio.run_coroutine_threadsafe(self.opcua_wrapper.disconnect(), self.loop)
                 future.result(timeout=2.0)
             except Exception as e:
                 self.get_logger().warn(f'Error during disconnect: {e}')
