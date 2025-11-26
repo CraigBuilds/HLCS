@@ -1,6 +1,6 @@
 """Unit tests for the GUI node."""
 import sys
-from unittest.mock import Mock, MagicMock
+from unittest.mock import MagicMock
 
 # Mock ROS2 and PySide6 modules before importing gui
 sys.modules['rclpy'] = MagicMock()
