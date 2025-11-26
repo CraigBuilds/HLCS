@@ -145,7 +145,7 @@ class DriverNode(Node):
 
     def reset_counter_callback(self, request, response):
         """Service callback to reset counter."""
-        if self.client and self.reset_method:
+        if self.client and self.reset_method and self.loop:
             try:
                 future = asyncio.run_coroutine_threadsafe(
                     self.client.call_method(self.reset_method, []), self.loop
