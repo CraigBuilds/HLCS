@@ -36,7 +36,7 @@ if ! docker info &> /dev/null; then
 fi
 
 echo -e "${YELLOW}Pulling Docker image if needed...${NC}"
-docker pull ${DOCKER_IMAGE}
+docker pull "${DOCKER_IMAGE}"
 
 echo ""
 echo -e "${YELLOW}Running tests in Docker container...${NC}"
@@ -46,7 +46,7 @@ echo ""
 docker run --rm \
     -v "${SCRIPT_DIR}:/workspace" \
     -w /workspace \
-    ${DOCKER_IMAGE} \
+    "${DOCKER_IMAGE}" \
     bash -c "
         set -e
         echo '=== Installing dependencies ===' && \
