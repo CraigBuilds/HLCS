@@ -55,7 +55,7 @@ def test_sim_node_runs():
         assert runner.process is not None
         assert runner.process.poll() is None
         time.sleep(1)
-        # Process should still be running after 1 second
+        # Process should still be running after 1 second (verify no immediate crash)
         assert runner.process.poll() is None
 
 
