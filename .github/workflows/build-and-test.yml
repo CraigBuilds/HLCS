@@ -49,13 +49,6 @@ jobs:
       run: |
         source /opt/ros/humble/setup.bash && \
         colcon build --packages-select hlcs
-    
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-artifacts
-        path: install/
-        retention-days: 1
 
   test:
     name: Test ${{ matrix.test-name }}
@@ -100,11 +93,11 @@ jobs:
           libxkbcommon0
         pip3 install -r requirements.txt
     
-    - name: Download build artifacts
-      uses: actions/download-artifact@v4
-      with:
-        name: build-artifacts
-        path: install/
+    - name: Build package
+      shell: bash
+      run: |
+        source /opt/ros/humble/setup.bash && \
+        colcon build --packages-select hlcs
     
     - name: Run tests
       shell: bash
