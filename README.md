@@ -57,7 +57,27 @@ ros2 run hlcs gui
 
 ## Testing
 
-### Running Tests Locally
+### Running Tests Locally with Docker
+
+The easiest way to run tests locally is using the provided script, which runs tests in the same Docker container as CI:
+
+```bash
+./run_tests_local.sh
+```
+
+Prerequisites:
+- Docker installed and running
+- Repository cloned locally
+
+This script will:
+1. Pull the `ros:humble` Docker image (if not already available)
+2. Install all dependencies
+3. Build the package
+4. Run all tests
+
+### Running Tests Locally without Docker
+
+If you have ROS2 installed locally, you can run tests directly:
 
 Prerequisites:
 - Source ROS2 environment: `source /opt/ros/humble/setup.bash`
