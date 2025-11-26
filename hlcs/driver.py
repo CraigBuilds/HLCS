@@ -55,7 +55,11 @@ class DriverNode(Node):
         """Run the OPC UA client in a separate thread with its own event loop."""
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
-        self.loop.run_until_complete(self._connect_opcua())
+        try:
+            self.loop.run_until_complete(self._connect_opcua())
+        except Exception as e:
+            self.get_logger().error(f'Failed to start OPC UA client: {e}')
+            return
         try:
             self.loop.run_forever()
         finally:
@@ -164,7 +168,11 @@ class DriverNode(Node):
         """Clean up the node."""
         self.running = False
         if self.client and self.loop:
-            asyncio.run_coroutine_threadsafe(self.client.disconnect(), self.loop)
+            try:
+                future = asyncio.run_coroutine_threadsafe(self.client.disconnect(), self.loop)
+                future.result(timeout=2.0)
+            except Exception as e:
+                self.get_logger().warn(f'Error during disconnect: {e}')
             self.loop.call_soon_threadsafe(self.loop.stop)
         super().destroy_node()
 
