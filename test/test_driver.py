@@ -18,5 +18,3 @@ def test_driver_node_class_exists():
     """Test DriverNode class exists and has basic structure."""
     assert DriverNode is not None
     assert hasattr(DriverNode, '__init__')
-
-

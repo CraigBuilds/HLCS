@@ -54,5 +54,3 @@ def test_gui_node_class_exists():
     """Test GUINode class exists and has basic structure."""
     assert GUINode is not None
     assert hasattr(GUINode, '__init__')
-
-
