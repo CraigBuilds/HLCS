@@ -10,7 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  build:
+    name: Build ROS2 Package
     runs-on: ubuntu-latest
     container:
       image: ros:humble
@@ -25,10 +26,133 @@ jobs:
         apt-get install -y python3-pip
         pip3 install -r requirements.txt
     
-    - name: Build and test
+    - name: Build package
       shell: bash
       run: |
         source /opt/ros/humble/setup.bash && \
-        colcon build --packages-select hlcs && \
+        colcon build --packages-select hlcs
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: |
+          install/
+          build/
+        retention-days: 1
+
+  test-sim:
+    name: Test OPC UA Simulator
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: ros:humble
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        apt-get update
+        apt-get install -y python3-pip
+        pip3 install -r requirements.txt
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-artifacts
+    
+    - name: Run sim tests
+      shell: bash
+      run: |
+        source /opt/ros/humble/setup.bash && \
         source install/setup.bash && \
-        python3 -m pytest test/ -v
+        python3 -m pytest test/test_sim.py -v
+
+  test-driver:
+    name: Test Driver Node
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: ros:humble
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        apt-get update
+        apt-get install -y python3-pip
+        pip3 install -r requirements.txt
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-artifacts
+    
+    - name: Run driver tests
+      shell: bash
+      run: |
+        source /opt/ros/humble/setup.bash && \
+        source install/setup.bash && \
+        python3 -m pytest test/test_driver.py -v
+
+  test-gui:
+    name: Test GUI Node
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: ros:humble
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        apt-get update
+        apt-get install -y python3-pip
+        pip3 install -r requirements.txt
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-artifacts
+    
+    - name: Run GUI tests
+      shell: bash
+      run: |
+        source /opt/ros/humble/setup.bash && \
+        source install/setup.bash && \
+        python3 -m pytest test/test_gui.py -v
+
+  test-smoke:
+    name: Smoke Tests
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: ros:humble
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Install dependencies
+      run: |
+        apt-get update
+        apt-get install -y python3-pip
+        pip3 install -r requirements.txt
+    
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-artifacts
+    
+    - name: Run smoke tests
+      shell: bash
+      run: |
+        source /opt/ros/humble/setup.bash && \
+        source install/setup.bash && \
+        python3 -m pytest test/test_smoke.py -v
