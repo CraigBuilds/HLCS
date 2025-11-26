@@ -3,16 +3,44 @@ import asyncio
 from asyncua import Server, ua
 
 
+class CounterLogic:
+    """Business logic for counter operations - separated for testability."""
+
+    def __init__(self):
+        """Initialize counter logic."""
+        self._counter_value = 0
+
+    def get_counter(self):
+        """Get current counter value."""
+        return self._counter_value
+
+    def increment_counter(self):
+        """Increment the counter and return new value."""
+        self._counter_value += 1
+        return self._counter_value
+
+    def reset_counter(self):
+        """Reset the counter to 0."""
+        self._counter_value = 0
+        return self._counter_value
+
+
 class OpcuaSimulator:
     """Simple OPC UA server that hosts data and methods."""
 
-    def __init__(self, endpoint="opc.tcp://0.0.0.0:4840/freeopcua/server/"):
-        """Initialize the OPC UA server."""
+    def __init__(self, endpoint="opc.tcp://0.0.0.0:4840/freeopcua/server/", counter_logic=None):
+        """Initialize the OPC UA server.
+        
+        Args:
+            endpoint: OPC UA server endpoint URL
+            counter_logic: Optional CounterLogic instance for testing
+        """
         self.endpoint = endpoint
         self.server = None
         self.namespace_idx = None
         self.data_node = None
         self.counter_node = None
+        self.counter_logic = counter_logic or CounterLogic()
 
     async def setup(self):
         """Set up the OPC UA server."""
@@ -61,14 +89,14 @@ class OpcuaSimulator:
 
     async def increment_counter(self, parent):
         """Method to increment the counter."""
-        current_value = await self.counter_node.read_value()
-        new_value = current_value + 1
+        new_value = self.counter_logic.increment_counter()
         await self.counter_node.write_value(new_value)
         print(f"Counter incremented to {new_value}")
         return new_value
 
     async def reset_counter(self, parent):
         """Method to reset the counter."""
+        self.counter_logic.reset_counter()
         await self.counter_node.write_value(0)
         print("Counter reset to 0")
 
