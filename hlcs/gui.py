@@ -14,6 +14,53 @@ from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
 
 
+class ServiceCallHandler:
+    """Handler for ROS2 service calls - separated for testability."""
+
+    def __init__(self, increment_client, reset_client, logger=None):
+        """Initialize the handler.
+        
+        Args:
+            increment_client: ROS2 service client for increment
+            reset_client: ROS2 service client for reset
+            logger: Optional logger for messages
+        """
+        self.increment_client = increment_client
+        self.reset_client = reset_client
+        self.logger = logger
+
+    def is_increment_service_available(self, timeout_sec=1.0):
+        """Check if increment service is available."""
+        return self.increment_client.wait_for_service(timeout_sec=timeout_sec)
+
+    def is_reset_service_available(self, timeout_sec=1.0):
+        """Check if reset service is available."""
+        return self.reset_client.wait_for_service(timeout_sec=timeout_sec)
+
+    def call_increment_async(self):
+        """Call increment service asynchronously."""
+        request = Trigger.Request()
+        return self.increment_client.call_async(request)
+
+    def call_reset_async(self):
+        """Call reset service asynchronously."""
+        request = Trigger.Request()
+        return self.reset_client.call_async(request)
+
+    def handle_service_response(self, future):
+        """Handle service response and return status."""
+        try:
+            response = future.result()
+            if response.success:
+                return True, f'Success: {response.message}'
+            else:
+                return False, f'Failed: {response.message}'
+        except Exception as e:
+            if self.logger:
+                self.logger.error(f'Service call failed: {e}')
+            return False, f'Service call failed: {e}'
+
+
 class ROS2Bridge(QObject):
     """Bridge between ROS2 and QML."""
 
@@ -68,19 +115,26 @@ class ROS2Bridge(QObject):
     @Slot()
     def incrementCounter(self):
         """Call increment counter service."""
-        self.node.call_increment_service()
+        if self.node:
+            self.node.call_increment_service()
 
     @Slot()
     def resetCounter(self):
         """Call reset counter service."""
-        self.node.call_reset_service()
+        if self.node:
+            self.node.call_reset_service()
 
 
 class GUINode(Node):
     """ROS2 node with GUI for displaying data and calling services."""
 
-    def __init__(self, bridge):
-        """Initialize the GUI node."""
+    def __init__(self, bridge, service_handler=None):
+        """Initialize the GUI node.
+        
+        Args:
+            bridge: ROS2Bridge instance for Qt communication
+            service_handler: Optional ServiceCallHandler for testing
+        """
         super().__init__('gui')
         self.bridge = bridge
         
@@ -96,65 +150,63 @@ class GUINode(Node):
         self.increment_client = self.create_client(Trigger, 'hlcs/increment_counter')
         self.reset_client = self.create_client(Trigger, 'hlcs/reset_counter')
         
+        # Service handler
+        self.service_handler = service_handler or ServiceCallHandler(
+            self.increment_client, self.reset_client, self.get_logger()
+        )
+        
         self.get_logger().info('GUI node initialized')
-        self.bridge.statusMessage = 'GUI node initialized. Waiting for data...'
+        if self.bridge:
+            self.bridge.statusMessage = 'GUI node initialized. Waiting for data...'
 
     def data_callback(self, msg):
         """Callback for data topic."""
-        self.bridge.dataValue = msg.data
+        if self.bridge:
+            self.bridge.dataValue = msg.data
 
     def counter_callback(self, msg):
         """Callback for counter topic."""
-        self.bridge.counterValue = msg.data
-        self.bridge.statusMessage = f'Received counter update: {msg.data}'
+        if self.bridge:
+            self.bridge.counterValue = msg.data
+            self.bridge.statusMessage = f'Received counter update: {msg.data}'
 
     def call_increment_service(self):
         """Call the increment counter service."""
-        if not self.increment_client.wait_for_service(timeout_sec=1.0):
-            self.bridge.statusMessage = 'Increment service not available'
+        if not self.service_handler.is_increment_service_available():
+            if self.bridge:
+                self.bridge.statusMessage = 'Increment service not available'
             self.get_logger().warn('Increment service not available')
             return
         
-        request = Trigger.Request()
-        future = self.increment_client.call_async(request)
+        future = self.service_handler.call_increment_async()
         future.add_done_callback(self.increment_response_callback)
-        self.bridge.statusMessage = 'Calling increment service...'
+        if self.bridge:
+            self.bridge.statusMessage = 'Calling increment service...'
 
     def increment_response_callback(self, future):
         """Handle increment service response."""
-        try:
-            response = future.result()
-            if response.success:
-                self.bridge.statusMessage = f'Success: {response.message}'
-            else:
-                self.bridge.statusMessage = f'Failed: {response.message}'
-        except Exception as e:
-            self.bridge.statusMessage = f'Service call failed: {e}'
-            self.get_logger().error(f'Service call failed: {e}')
+        success, message = self.service_handler.handle_service_response(future)
+        if self.bridge:
+            self.bridge.statusMessage = message
 
     def call_reset_service(self):
         """Call the reset counter service."""
-        if not self.reset_client.wait_for_service(timeout_sec=1.0):
-            self.bridge.statusMessage = 'Reset service not available'
+        if not self.service_handler.is_reset_service_available():
+            if self.bridge:
+                self.bridge.statusMessage = 'Reset service not available'
             self.get_logger().warn('Reset service not available')
             return
         
-        request = Trigger.Request()
-        future = self.reset_client.call_async(request)
+        future = self.service_handler.call_reset_async()
         future.add_done_callback(self.reset_response_callback)
-        self.bridge.statusMessage = 'Calling reset service...'
+        if self.bridge:
+            self.bridge.statusMessage = 'Calling reset service...'
 
     def reset_response_callback(self, future):
         """Handle reset service response."""
-        try:
-            response = future.result()
-            if response.success:
-                self.bridge.statusMessage = f'Success: {response.message}'
-            else:
-                self.bridge.statusMessage = f'Failed: {response.message}'
-        except Exception as e:
-            self.bridge.statusMessage = f'Service call failed: {e}'
-            self.get_logger().error(f'Service call failed: {e}')
+        success, message = self.service_handler.handle_service_response(future)
+        if self.bridge:
+            self.bridge.statusMessage = message
 
 
 def main(args=None):
