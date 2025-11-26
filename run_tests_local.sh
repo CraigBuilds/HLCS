@@ -51,7 +51,14 @@ docker run --rm \
         set -e
         echo '=== Installing dependencies ===' && \
         apt-get update -qq && \
-        apt-get install -y -qq python3-pip && \
+        apt-get install -y -qq \
+            python3-pip \
+            libgl1 \
+            libglib2.0-0 \
+            libdbus-1-3 \
+            libegl1 \
+            libfontconfig1 \
+            libxkbcommon0 && \
         pip3 install -q -r requirements.txt && \
         echo '' && \
         echo '=== Building package ===' && \
