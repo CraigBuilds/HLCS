@@ -1,5 +1,4 @@
 """Unit tests for the GUI node."""
-import pytest
 import sys
 from unittest.mock import Mock, MagicMock
 
