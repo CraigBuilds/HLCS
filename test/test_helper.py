@@ -8,17 +8,19 @@ import psutil
 class ROS2NodeRunner:
     """Helper class to run and manage ROS2 nodes in tests."""
     
-    def __init__(self, package_name, node_name, timeout=5):
+    def __init__(self, package_name, node_name, timeout=5, env=None):
         """Initialize the node runner.
         
         Args:
             package_name: Name of the ROS2 package
             node_name: Name of the node to run
             timeout: Timeout in seconds for node startup
+            env: Optional environment variables dict for the subprocess
         """
         self.package_name = package_name
         self.node_name = node_name
         self.timeout = timeout
+        self.env = env
         self.process = None
     
     def start(self):
@@ -30,6 +32,7 @@ class ROS2NodeRunner:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            env=self.env,
             preexec_fn=lambda: signal.signal(signal.SIGINT, signal.SIG_IGN)
         )
         
