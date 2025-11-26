@@ -12,22 +12,28 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    container:
+      image: ros:humble
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
     
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.12'
-    
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pytest pytest-asyncio pytest-mock
+        apt-get update
+        apt-get install -y python3-pip
+        pip3 install -r requirements.txt
+        pip3 install pytest pytest-asyncio pytest-mock pytest-timeout psutil
+    
+    - name: Build ROS2 package
+      run: |
+        . /opt/ros/humble/setup.sh
+        colcon build --packages-select hlcs
+        . install/setup.sh
     
     - name: Run tests
       run: |
-        python -m pytest test/ -v
+        . /opt/ros/humble/setup.sh
+        . install/setup.sh
+        python3 -m pytest test/ -v
