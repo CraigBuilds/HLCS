@@ -59,38 +59,17 @@ ros2 run hlcs gui
 
 ### Running Tests Locally
 
-The project includes unit tests and smoke tests for all three components (sim, driver, gui).
+Prerequisites:
+- Source ROS2 environment: `source /opt/ros/humble/setup.bash`
+- Build package: `colcon build --packages-select hlcs`
+- Source install: `source install/setup.bash`
 
-**Prerequisites:**
-- ROS2 environment must be sourced: `. /opt/ros/humble/setup.bash`
-- Package must be built: `colcon build --packages-select hlcs`
-- Package must be sourced: `. install/setup.bash`
-
-1. Install test dependencies:
+Install dependencies and run tests:
 ```bash
-pip install pytest pytest-asyncio pytest-mock pytest-timeout psutil
-```
-
-2. Run all tests:
-```bash
+pip install -r requirements.txt
 python -m pytest test/ -v
-```
-
-3. Run specific test files:
-```bash
-# Smoke tests only (includes ROS2 node startup tests)
-python -m pytest test/test_smoke.py -v
-
-# Tests for simulator
-python -m pytest test/test_sim.py -v
-
-# Tests for driver node
-python -m pytest test/test_driver.py -v
-
-# Tests for GUI node
-python -m pytest test/test_gui.py -v
 ```
 
 ### Continuous Integration
 
-Tests are automatically run on every push and pull request via GitHub Actions using a ROS2 Humble container. The workflow builds the package with colcon and runs the full test suite. See the workflow status in the Actions tab of the repository.
+Tests run automatically on push/pull requests using GitHub Actions with a ROS2 Humble container.

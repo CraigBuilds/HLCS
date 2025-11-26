@@ -24,7 +24,6 @@ jobs:
         apt-get update
         apt-get install -y python3-pip
         pip3 install -r requirements.txt
-        pip3 install pytest pytest-asyncio pytest-mock pytest-timeout psutil
     
     - name: Build ROS2 package
       run: |
