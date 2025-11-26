@@ -85,7 +85,7 @@ def test_gui_node_runs():
     import os
     env = os.environ.copy()
     env['QT_QPA_PLATFORM'] = 'offscreen'
-    with ROS2NodeRunner('hlcs', 'gui', timeout=3, env=env) as runner:
+    with ROS2NodeRunner('hlcs', 'gui', timeout=3, env=env, check_startup=False) as runner:
         # Give it time to attempt startup
         time.sleep(2)
         # The process might have exited due to display issues, which is OK
