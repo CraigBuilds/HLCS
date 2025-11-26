@@ -28,12 +28,12 @@ jobs:
     
     - name: Build ROS2 package
       run: |
-        . /opt/ros/humble/setup.sh
+        source /opt/ros/humble/setup.bash
         colcon build --packages-select hlcs
-        . install/setup.sh
+        source install/setup.bash
     
     - name: Run tests
       run: |
-        . /opt/ros/humble/setup.sh
-        . install/setup.sh
+        source /opt/ros/humble/setup.bash
+        source install/setup.bash
         python3 -m pytest test/ -v

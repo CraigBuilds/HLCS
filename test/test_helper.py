@@ -24,6 +24,7 @@ class ROS2NodeRunner:
     def start(self):
         """Start the ROS2 node."""
         cmd = ['ros2', 'run', self.package_name, self.node_name]
+        # preexec_fn ignores SIGINT in child to allow clean shutdown via parent
         self.process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
@@ -73,8 +74,8 @@ class ROS2NodeRunner:
         except psutil.NoSuchProcess:
             # Process already terminated
             pass
-        except Exception as e:
-            # If all else fails, terminate
+        except (subprocess.SubprocessError, OSError) as e:
+            # Handle process-related errors specifically
             if self.process.poll() is None:
                 self.process.terminate()
                 self.process.wait()
