@@ -184,6 +184,7 @@ def main(args=None):
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
+        # Allow graceful shutdown on Ctrl+C without traceback
         pass
     finally:
         node.destroy_node()
