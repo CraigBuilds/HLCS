@@ -25,9 +25,9 @@ def test_opcua_simulator_init_custom_endpoint():
 async def test_opcua_simulator_setup():
     """Test OPC UA simulator setup creates all required nodes."""
     simulator = OpcuaSimulator()
+    await simulator.setup()
     
-    # Use server context manager for proper cleanup
-    async with simulator.server or await _setup_simulator(simulator):
+    async with simulator.server:
         # Verify server was created
         assert simulator.server is not None
         assert simulator.namespace_idx is not None
@@ -131,10 +131,4 @@ async def test_opcua_simulator_counter_node_writable():
         # Read back and verify
         read_value = await simulator.counter_node.read_value()
         assert read_value == test_value
-
-
-async def _setup_simulator(simulator):
-    """Helper to setup simulator and return server for context management."""
-    await simulator.setup()
-    return simulator.server
 
