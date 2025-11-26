@@ -1,7 +1,6 @@
 """Integration tests to verify HLCS nodes can run in a real ROS2 environment."""
 import pytest
 import time
-import os
 from test.test_helper import ROS2NodeRunner
 
 
@@ -40,6 +39,7 @@ def test_gui_node_runs():
     Requires ROS2 environment to be installed and sourced.
     Tests that the node attempts to start even in headless environments.
     """
+    import os
     env = os.environ.copy()
     env['QT_QPA_PLATFORM'] = 'offscreen'
     with ROS2NodeRunner('hlcs', 'gui', timeout=3, env=env, check_startup=False) as runner:
