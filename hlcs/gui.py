@@ -1,6 +1,5 @@
 """GUI Node - ROS2 node with PySide6/QML interface for HLCS."""
 import sys
-import os
 from pathlib import Path
 from threading import Thread
 
