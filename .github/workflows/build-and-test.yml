@@ -60,6 +60,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: build-artifacts
+        path: .
     
     - name: Run sim tests
       shell: bash
@@ -89,6 +90,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: build-artifacts
+        path: .
     
     - name: Run driver tests
       shell: bash
@@ -118,6 +120,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: build-artifacts
+        path: .
     
     - name: Run GUI tests
       shell: bash
@@ -147,6 +150,7 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: build-artifacts
+        path: .
     
     - name: Run smoke tests
       shell: bash
