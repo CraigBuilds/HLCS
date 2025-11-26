@@ -96,8 +96,8 @@ class OpcuaSimulator:
 
     async def reset_counter(self, parent):
         """Method to reset the counter."""
-        self.counter_logic.reset_counter()
-        await self.counter_node.write_value(0)
+        reset_value = self.counter_logic.reset_counter()
+        await self.counter_node.write_value(reset_value)
         print("Counter reset to 0")
 
     async def run(self):
