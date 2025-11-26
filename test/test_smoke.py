@@ -5,51 +5,53 @@ import time
 from test.test_helper import ROS2NodeRunner
 
 
-def test_sim_import():
-    """Smoke test: Verify sim module can be imported."""
+def test_sim_module_importable():
+    """Smoke test: Verify sim module can be imported without errors."""
     from hlcs import sim
     assert sim is not None
+    assert hasattr(sim, 'OpcuaSimulator')
+    assert hasattr(sim, 'main')
 
 
-def test_driver_import():
-    """Smoke test: Verify driver module can be imported."""
+def test_driver_module_importable():
+    """Smoke test: Verify driver module can be imported without errors."""
     from hlcs import driver
     assert driver is not None
+    assert hasattr(driver, 'DriverNode')
+    assert hasattr(driver, 'main')
 
 
-def test_gui_import():
-    """Smoke test: Verify gui module can be imported."""
+def test_gui_module_importable():
+    """Smoke test: Verify gui module can be imported without errors."""
     from hlcs import gui
     assert gui is not None
+    assert hasattr(gui, 'GUINode')
+    assert hasattr(gui, 'ROS2Bridge')
+    assert hasattr(gui, 'main')
 
 
-def test_opcua_simulator_class_exists():
-    """Smoke test: Verify OpcuaSimulator class exists."""
+def test_opcua_simulator_instantiable():
+    """Smoke test: Verify OpcuaSimulator can be instantiated."""
     from hlcs.sim import OpcuaSimulator
-    assert OpcuaSimulator is not None
+    simulator = OpcuaSimulator()
+    assert simulator is not None
+    assert simulator.endpoint is not None
 
 
-def test_driver_node_class_exists():
-    """Smoke test: Verify DriverNode class exists."""
-    from hlcs.driver import DriverNode
-    assert DriverNode is not None
-
-
-def test_gui_node_class_exists():
-    """Smoke test: Verify GUINode class exists."""
-    from hlcs.gui import GUINode
-    assert GUINode is not None
-
-
-def test_ros2bridge_class_exists():
-    """Smoke test: Verify ROS2Bridge class exists."""
-    from hlcs.gui import ROS2Bridge
-    assert ROS2Bridge is not None
+def test_opcua_simulator_with_custom_endpoint():
+    """Smoke test: Verify OpcuaSimulator accepts custom endpoint."""
+    from hlcs.sim import OpcuaSimulator
+    custom_endpoint = "opc.tcp://127.0.0.1:5000/test/"
+    simulator = OpcuaSimulator(endpoint=custom_endpoint)
+    assert simulator.endpoint == custom_endpoint
 
 
 @pytest.mark.timeout(15)
 def test_sim_node_runs():
-    """Smoke test: Verify sim node can be started and stopped."""
+    """Smoke test: Verify sim node can be started and stopped.
+    
+    Note: This test requires ROS2 to be installed and sourced.
+    """
     with ROS2NodeRunner('hlcs', 'sim') as runner:
         # Verify process is running
         assert runner.process is not None

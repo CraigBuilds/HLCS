@@ -1,6 +1,10 @@
-"""Unit tests for the GUI node."""
+"""Unit tests for the GUI node.
+
+These tests focus on testing the GUI node's business logic with mocked dependencies.
+"""
 import sys
 from unittest.mock import MagicMock
+import pytest
 
 # Mock ROS2 and PySide6 modules before importing gui
 sys.modules['rclpy'] = MagicMock()
@@ -44,12 +48,53 @@ sys.modules['PySide6.QtQml'] = MagicMock()
 from hlcs.gui import ROS2Bridge, GUINode
 
 
+def test_gui_module_imports():
+    """Test that gui module can be imported."""
+    from hlcs import gui
+    assert gui is not None
+    assert hasattr(gui, 'main')
+
+
 def test_ros2bridge_class_exists():
-    """Test ROS2Bridge class exists."""
+    """Test ROS2Bridge class exists in the module."""
     assert ROS2Bridge is not None
 
 
 def test_gui_node_class_exists():
-    """Test GUINode class exists and has basic structure."""
+    """Test GUINode class exists in the module."""
     assert GUINode is not None
-    assert hasattr(GUINode, '__init__')
+
+
+def test_ros2bridge_initialization():
+    """Test ROS2Bridge initializes with a node."""
+    mock_node = MagicMock()
+    bridge = ROS2Bridge(mock_node)
+    
+    assert bridge.node == mock_node
+    assert bridge._data_value == 0.0
+    assert bridge._counter_value == 0
+    assert bridge._status_message == "Waiting for data..."
+
+
+def test_ros2bridge_increment_counter_calls_node():
+    """Test ROS2Bridge incrementCounter slot calls node method."""
+    mock_node = MagicMock()
+    mock_node.call_increment_service = MagicMock()
+    
+    bridge = ROS2Bridge(mock_node)
+    bridge.incrementCounter()
+    
+    # Verify the node method was called
+    mock_node.call_increment_service.assert_called_once()
+
+
+def test_ros2bridge_reset_counter_calls_node():
+    """Test ROS2Bridge resetCounter slot calls node method."""
+    mock_node = MagicMock()
+    mock_node.call_reset_service = MagicMock()
+    
+    bridge = ROS2Bridge(mock_node)
+    bridge.resetCounter()
+    
+    # Verify the node method was called
+    mock_node.call_reset_service.assert_called_once()
