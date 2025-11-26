@@ -69,6 +69,7 @@ class ROS2NodeRunner:
                     try:
                         child.kill()
                     except psutil.NoSuchProcess:
+                        # Child process already exited; nothing to do.
                         pass
                 self.process.wait()
         except psutil.NoSuchProcess:
