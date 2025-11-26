@@ -54,3 +54,22 @@ ros2 run hlcs gui
 
 - `hlcs/increment_counter` (std_srvs/Trigger): Increment the counter
 - `hlcs/reset_counter` (std_srvs/Trigger): Reset the counter to 0
+
+## Testing
+
+### Running Tests Locally
+
+Prerequisites:
+- Source ROS2 environment: `source /opt/ros/humble/setup.bash`
+- Build package: `colcon build --packages-select hlcs`
+- Source install: `source install/setup.bash`
+
+Install dependencies and run tests:
+```bash
+pip install -r requirements.txt
+python -m pytest test/ -v
+```
+
+### Continuous Integration
+
+Tests run automatically on push/pull requests using GitHub Actions with a ROS2 Humble container.
