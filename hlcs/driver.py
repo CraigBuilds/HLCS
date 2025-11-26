@@ -39,6 +39,7 @@ class DriverNode(Node):
         self.counter_node = None
         self.increment_method = None
         self.reset_method = None
+        self.running = True
         
         # Start OPC UA client in separate thread
         self.loop = None
@@ -55,7 +56,10 @@ class DriverNode(Node):
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
         self.loop.run_until_complete(self._connect_opcua())
-        self.loop.run_forever()
+        try:
+            self.loop.run_forever()
+        finally:
+            self.loop.close()
 
     async def _connect_opcua(self):
         """Connect to the OPC UA server."""
@@ -91,7 +95,7 @@ class DriverNode(Node):
     def timer_callback(self):
         """Timer callback to publish OPC UA data."""
         if self.client and self.data_node and self.counter_node:
-            # Schedule the async read in the OPC UA event loop
+            # Schedule both reads concurrently in the OPC UA event loop
             future_data = asyncio.run_coroutine_threadsafe(
                 self.data_node.read_value(), self.loop
             )
@@ -100,8 +104,8 @@ class DriverNode(Node):
             )
             
             try:
-                data_value = future_data.result(timeout=1.0)
-                counter_value = future_counter.result(timeout=1.0)
+                data_value = future_data.result(timeout=0.5)
+                counter_value = future_counter.result(timeout=0.5)
                 
                 # Publish to ROS2 topics
                 data_msg = Float64()
@@ -158,8 +162,10 @@ class DriverNode(Node):
 
     def destroy_node(self):
         """Clean up the node."""
+        self.running = False
         if self.client and self.loop:
             asyncio.run_coroutine_threadsafe(self.client.disconnect(), self.loop)
+            self.loop.call_soon_threadsafe(self.loop.stop)
         super().destroy_node()
 
 

@@ -12,7 +12,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/qml', ['hlcs/qml/main.qml']),
     ],
-    install_requires=['setuptools'],
+    install_requires=['setuptools', 'asyncua', 'PySide6'],
     zip_safe=True,
     maintainer='maintainer',
     maintainer_email='maintainer@example.com',

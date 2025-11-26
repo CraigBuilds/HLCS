@@ -2,6 +2,7 @@
 import sys
 import os
 from pathlib import Path
+from threading import Thread
 
 import rclpy
 from rclpy.node import Node
@@ -189,7 +190,6 @@ def main(args=None):
     executor.add_node(node)
     
     # Run ROS2 in a separate thread
-    from threading import Thread
     ros_thread = Thread(target=executor.spin, daemon=True)
     ros_thread.start()
     
