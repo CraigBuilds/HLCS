@@ -16,15 +16,15 @@ class DriverNode(Node):
     def __init__(self):
         """Initialize the driver node."""
         super().__init__('driver')
-        
+
         # Parameters
         self.declare_parameter('opcua_endpoint', 'opc.tcp://localhost:4840/freeopcua/server/')
         self.opcua_endpoint = self.get_parameter('opcua_endpoint').value
-        
+
         # Publishers
         self.data_pub = self.create_publisher(Float64, 'hlcs/data', 10)
         self.counter_pub = self.create_publisher(Int32, 'hlcs/counter', 10)
-        
+
         # Services
         self.increment_srv = self.create_service(
             Trigger, 'hlcs/increment_counter', self.increment_counter_callback
@@ -32,7 +32,7 @@ class DriverNode(Node):
         self.reset_srv = self.create_service(
             Trigger, 'hlcs/reset_counter', self.reset_counter_callback
         )
-        
+
         # OPC UA client
         self.client = None
         self.data_node = None
@@ -40,15 +40,15 @@ class DriverNode(Node):
         self.increment_method = None
         self.reset_method = None
         self.running = True
-        
+
         # Start OPC UA client in separate thread
         self.loop = None
         self.opcua_thread = Thread(target=self._run_opcua_client, daemon=True)
         self.opcua_thread.start()
-        
+
         # Timer for publishing
         self.timer = self.create_timer(0.1, self.timer_callback)
-        
+
         self.get_logger().info(f'Driver node initialized, connecting to {self.opcua_endpoint}')
 
     def _run_opcua_client(self):
@@ -71,18 +71,18 @@ class DriverNode(Node):
             self.client = Client(url=self.opcua_endpoint)
             await self.client.connect()
             self.get_logger().info('Connected to OPC UA server')
-            
+
             # Get namespace index
             nsidx = await self.client.get_namespace_index("http://hlcs.example.com")
-            
+
             # Get nodes
             root = self.client.get_root_node()
             objects = await root.get_child(["0:Objects"])
             hlcs_object = await objects.get_child([f"{nsidx}:HLCSObject"])
-            
+
             self.data_node = await hlcs_object.get_child([f"{nsidx}:Data"])
             self.counter_node = await hlcs_object.get_child([f"{nsidx}:Counter"])
-            
+
             # Get methods
             children = await hlcs_object.get_children()
             for child in children:
@@ -91,7 +91,7 @@ class DriverNode(Node):
                     self.increment_method = child
                 elif browse_name.Name == "ResetCounter":
                     self.reset_method = child
-            
+
             self.get_logger().info('OPC UA nodes and methods acquired')
         except Exception as e:
             self.get_logger().error(f'Failed to connect to OPC UA server: {e}')
@@ -106,16 +106,16 @@ class DriverNode(Node):
             future_counter = asyncio.run_coroutine_threadsafe(
                 self.counter_node.read_value(), self.loop
             )
-            
+
             try:
                 data_value = future_data.result(timeout=0.5)
                 counter_value = future_counter.result(timeout=0.5)
-                
+
                 # Publish to ROS2 topics
                 data_msg = Float64()
                 data_msg.data = float(data_value)
                 self.data_pub.publish(data_msg)
-                
+
                 counter_msg = Int32()
                 counter_msg.data = int(counter_value)
                 self.counter_pub.publish(counter_msg)

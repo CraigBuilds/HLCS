@@ -7,20 +7,22 @@ import psutil
 
 class ROS2NodeRunner:
     """Helper class to run and manage ROS2 nodes in tests."""
-    
-    def __init__(self, package_name, node_name, timeout=5):
+
+    def __init__(self, package_name, node_name, timeout=5, env=None):
         """Initialize the node runner.
-        
+
         Args:
             package_name: Name of the ROS2 package
             node_name: Name of the node to run
             timeout: Timeout in seconds for node startup
+            env: Optional environment variables to pass to the node
         """
         self.package_name = package_name
         self.node_name = node_name
         self.timeout = timeout
+        self.env = env
         self.process = None
-    
+
     def start(self):
         """Start the ROS2 node."""
         cmd = ['ros2', 'run', self.package_name, self.node_name]
@@ -30,12 +32,13 @@ class ROS2NodeRunner:
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            env=self.env,
             preexec_fn=lambda: signal.signal(signal.SIGINT, signal.SIG_IGN)
         )
-        
+
         # Give the node time to start
         time.sleep(2)
-        
+
         # Check if process is still running
         if self.process.poll() is not None:
             stdout, stderr = self.process.communicate()
@@ -43,22 +46,22 @@ class ROS2NodeRunner:
                 f"Node {self.node_name} failed to start.\n"
                 f"stdout: {stdout}\nstderr: {stderr}"
             )
-        
+
         return self.process
-    
+
     def stop(self):
         """Stop the ROS2 node gracefully."""
         if self.process is None:
             return
-        
+
         try:
             # Try graceful shutdown first
             parent = psutil.Process(self.process.pid)
             children = parent.children(recursive=True)
-            
+
             # Send SIGINT (Ctrl+C) for graceful shutdown
             parent.send_signal(signal.SIGINT)
-            
+
             # Wait for process to terminate
             try:
                 self.process.wait(timeout=self.timeout)
@@ -83,11 +86,12 @@ class ROS2NodeRunner:
                     self.process.wait()
             except Exception:
                 pass  # Best effort cleanup
+
     def __enter__(self):
         """Context manager entry."""
         self.start()
         return self
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit."""
         self.stop()

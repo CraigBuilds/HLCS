@@ -1,6 +1,5 @@
 """Smoke tests to verify basic functionality of HLCS components."""
 import pytest
-import subprocess
 import time
 from test.test_helper import ROS2NodeRunner
 
@@ -62,7 +61,7 @@ def test_sim_node_runs():
 @pytest.mark.timeout(15)
 def test_driver_node_runs():
     """Smoke test: Verify driver node can be started and stopped.
-    
+
     Note: This test may fail if OPC UA server is not available, which is expected.
     We're just testing that the node can start and handle the error gracefully.
     """
@@ -78,7 +77,7 @@ def test_driver_node_runs():
 @pytest.mark.timeout(15)
 def test_gui_node_runs():
     """Smoke test: Verify gui node can be started and stopped.
-    
+
     Note: GUI node requires a display. This test verifies it starts even in headless mode.
     The node may fail to initialize GUI components without a display, which is expected.
     """
