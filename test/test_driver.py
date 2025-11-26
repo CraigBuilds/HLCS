@@ -1,6 +1,6 @@
 """Unit tests for the driver node."""
 import sys
-from unittest.mock import Mock, MagicMock
+from unittest.mock import MagicMock
 
 # Mock rclpy module before importing driver
 sys.modules['rclpy'] = MagicMock()
